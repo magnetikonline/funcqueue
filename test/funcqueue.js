@@ -236,8 +236,6 @@ function getArraySequence(limit) {
 	// dummy task will simulate failure on the 3rd task called
 	function testTask(returnValue,callback) {
 
-		console.log(returnValue);
-
 		if (returnValue == 'Task 4') {
 			this.addTask(testTask,'Additional task 1');
 		}
