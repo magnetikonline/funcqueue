@@ -1,0 +1,19 @@
+{
+	"name": "funcqueue",
+	"version": "0.1.0",
+	"description": "A really low-fi function queue manager module for Node.js to ease the pain of building asynchronous code.",
+	"keywords": [
+		"async",
+		"queue"
+	],
+	"author": {
+		"name": "Peter Mescalchin",
+		"url": "http://magnetikonline.com"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/magnetikonline/funcqueue.git"
+	},
+	"main": "funcqueue.js",
+	"license": "MIT"
+}
