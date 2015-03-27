@@ -5,10 +5,10 @@ var slice = Array.prototype.slice;
 
 module.exports = function(parallelCount) {
 
-	return new funcQueue(parallelCount);
+	return new FuncQueue(parallelCount);
 };
 
-function funcQueue(parallelCount) {
+function FuncQueue(parallelCount) {
 
 	this.parallelCount = parallelCount || 1;
 	this.taskQueue = [];
@@ -17,7 +17,7 @@ function funcQueue(parallelCount) {
 	this.completeCallback = null;
 }
 
-funcQueue.prototype.addTask = function(callback) {
+FuncQueue.prototype.addTask = function(callback) {
 
 	if (this.taskQueue === false) {
 		// queue finished - no more tasks allowed
@@ -49,7 +49,7 @@ funcQueue.prototype.addTask = function(callback) {
 	return this;
 };
 
-funcQueue.prototype.complete = function(callback) {
+FuncQueue.prototype.complete = function(callback) {
 
 	if (!this.completeCallback) {
 		this.completeCallback = callback;
