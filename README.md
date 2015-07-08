@@ -47,13 +47,13 @@ All done!
 Create a new function queue. The `parallelCount` argument controls how many tasks will be executed at any one moment, if not given will default to `1` - thus all tasks will run serially.
 
 ### funcQueue.addTask(callback[,arguments...])
-Adds a new task function `callback` to the queue. Optional `arguments` can also be passed to the task function.
+Adds a new task function `callback` to the queue. Optional `arguments` can be passed to the function.
 
-Task upon execution will receive all arguments defined by `addTask()` along with a callback function which *must* be called at completion of task to notify funcQueue instance.
+Task upon execution will receive all passed arguments, along with a callback function which *must* be called at completion of task to notify funcQueue.
 
-This callback in turn accepts two optional arguments, an error (if any) and a computed result back from the task - keeping in the style of Node.js 'error first' callbacks.
+This callback in turn accepts two optional arguments - an error (if any raised) and the task result - keeping in the style of Node.js 'error first' callbacks.
 
-If an error is passed to this callback, currently running parallel tasks will continue then silently complete - whilst further tasks in the queue will *not* execute.
+In the case an error is passed back, currently running parallel tasks will continue to completion - future queue tasks will *not* be executed.
 
 As an example:
 
