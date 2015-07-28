@@ -35,7 +35,7 @@ FuncQueue.prototype.addTask = function(callback) {
 		var nextTask = this.taskQueue.shift();
 		this.resultList.push(undefined);
 
-		// call task function on next tick and increment active task count
+		// call task on next tick and increment active task count
 		process.nextTick(execTask.bind(
 			this,
 			nextTask[0],nextTask[1],
@@ -59,7 +59,7 @@ FuncQueue.prototype.complete = function(callback) {
 	return this;
 };
 
-function execTask(taskFunc,argumentList,resultListIndex) {
+function execTask(task,argumentList,resultListIndex) {
 
 	var self = this;
 
@@ -77,7 +77,7 @@ function execTask(taskFunc,argumentList,resultListIndex) {
 	});
 
 	// call task
-	taskFunc.apply(this,argumentList);
+	task.apply(this,argumentList);
 }
 
 function execTaskComplete(self,resultListIndex,err,result) {
@@ -92,9 +92,8 @@ function execTaskComplete(self,resultListIndex,err,result) {
 		// task callback returned error - complete queue right now, in error
 		self.taskQueue = false;
 		self.taskActiveCount = 0;
-		callCompleteCallback(self,err);
 
-		return;
+		return callCompleteCallback(self,err);
 	}
 
 	// save result returned from task and decrement active task count
