@@ -5,7 +5,7 @@ var SET_TIMEOUT_TEST_DELAY = 20,
 	assert = require('assert'),
 	util = require('util'),
 
-	funcQueue = require('../funcqueue.js');
+	funcQueue = require('../index.js');
 
 
 function getArraySequence(limit) {
@@ -44,6 +44,7 @@ function getArraySequence(limit) {
 		'Function complete() should return itself'
 	);
 
+	// try to assign a different complete callback function
 	testFuncQueue.complete(function() {});
 
 	assert(
@@ -73,7 +74,7 @@ function getArraySequence(limit) {
 
 				assert(
 					activeTaskCount == 1,
-					'Active running task count should not exceed 1'
+					'Active running task count should never exceed 1'
 				);
 
 				activeTaskCount--;
@@ -103,7 +104,9 @@ function getArraySequence(limit) {
 (function() {
 
 	var TEST_RUN_PARALLEL_COUNT = 4,
+		TEST_RUN_WAVES = 3,
 		testFuncQueue = funcQueue(TEST_RUN_PARALLEL_COUNT),
+		workCallbackSimulatorList = [],
 		activeTaskCount = 0;
 
 	// dummy task with artificial callback delay (to simulate 'work')
@@ -111,7 +114,7 @@ function getArraySequence(limit) {
 
 		activeTaskCount++;
 
-		setTimeout(
+		addWorkCallbackSimulator(
 			function() {
 
 				assert(
@@ -121,27 +124,52 @@ function getArraySequence(limit) {
 
 				activeTaskCount--;
 				callback(null,returnValue);
-			},
-			SET_TIMEOUT_TEST_DELAY
+			}
 		);
 	}
 
-	// queue up dummy tasks
-	var expectedTaskCount = TEST_RUN_PARALLEL_COUNT;
-	getArraySequence(8).forEach(function(number) {
+	function addWorkCallbackSimulator(callback) {
 
-		testFuncQueue.addTask(testTask,expectedTaskCount--,'Task ' + number);
-		if (expectedTaskCount < 1) expectedTaskCount = TEST_RUN_PARALLEL_COUNT;
+		workCallbackSimulatorList.push(callback);
+	}
+
+	function runWorkCallbackLoop() {
+
+		// call back next work task
+		workCallbackSimulatorList.shift()();
+
+		// queue up next loop if more work
+		if (workCallbackSimulatorList.length > 0) {
+			setTimeout(runWorkCallbackLoop,SET_TIMEOUT_TEST_DELAY);
+		}
+	}
+
+	// queue up dummy tasks
+	var expectedTaskCount = (TEST_RUN_PARALLEL_COUNT * TEST_RUN_WAVES);
+	getArraySequence(TEST_RUN_PARALLEL_COUNT * TEST_RUN_WAVES).forEach(function(number) {
+
+		testFuncQueue.addTask(
+			testTask,
+			(expectedTaskCount > TEST_RUN_PARALLEL_COUNT)
+				? TEST_RUN_PARALLEL_COUNT
+				: expectedTaskCount,
+			'Task ' + number
+		);
+
+		expectedTaskCount--;
 	});
 
 	testFuncQueue.complete(function(err,resultList) {
 
 		assert.deepEqual(
 			resultList,
-			['Task 1','Task 2','Task 3','Task 4','Task 5','Task 6','Task 7','Task 8'],
+			['Task 1','Task 2','Task 3','Task 4','Task 5','Task 6','Task 7','Task 8','Task 9','Task 10','Task 11','Task 12'],
 			'Expected result list different to actual'
 		);
 	});
+
+	// kick off the work simulation
+	setTimeout(runWorkCallbackLoop,SET_TIMEOUT_TEST_DELAY);
 })();
 
 
@@ -161,7 +189,7 @@ function getArraySequence(limit) {
 	testFuncQueue.addTask(
 		function(callback) {
 
-			callback(taskErrorObj,'Task fail');
+			callback(taskErrorObj);
 		}
 	);
 
@@ -233,7 +261,7 @@ function getArraySequence(limit) {
 		testFuncQueue = funcQueue(TEST_RUN_PARALLEL_COUNT);
 
 
-	// dummy task will simulate failure on the 3rd task called
+	// dummy task will add additional tests on the fourth and fifth task calls
 	function testTask(returnValue,callback) {
 
 		if (returnValue == 'Task 4') {
