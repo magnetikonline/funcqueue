@@ -1,7 +1,7 @@
 # Funcqueue
 A really low-fi function queue manager module for Node.js to ease the pain of building asynchronous code. Yep, there are hundreds of these already - here is another.
 
-NPM: https://www.npmjs.com/package/funcqueue
+[![NPM](https://nodei.co/npm/funcqueue.png?downloads=true)](https://nodei.co/npm/funcqueue/)
 
 ## Usage
 
