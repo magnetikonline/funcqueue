@@ -13,14 +13,16 @@ function FuncQueue(parallelCount) {
 	this.parallelCount = parallelCount || 1;
 	this.taskQueue = [];
 	this.taskActiveCount = 0;
-	this.resultList = [];
+	this.resultIndex = 0;
+	this.resultCollection = {};
+	this.haveResult = false;
 	this.completeCallback = null;
 }
 
 FuncQueue.prototype.addTask = function(callback) {
 
 	if (this.taskQueue === false) {
-		// queue finished - no more tasks allowed
+		// queue finished - no further tasks allowed
 		return;
 	}
 
@@ -29,17 +31,16 @@ FuncQueue.prototype.addTask = function(callback) {
 		this.taskQueue.push([callback,slice.call(arguments,1)]);
 	}
 
-	// tasks on queue and less currently running than allowed maximum?
+	// tasks on queue and less currently running than desired maximum?
 	while ((this.taskQueue.length > 0) && (this.taskActiveCount < this.parallelCount)) {
-		// fetch next task from queue and create slot for result
+		// fetch task from queue and call on next tick
 		var nextTask = this.taskQueue.shift();
-		this.resultList.push(undefined);
 
 		// call task on next tick and increment active task count
 		process.nextTick(execTask.bind(
 			this,
 			nextTask[0],nextTask[1],
-			this.resultList.length - 1 // the this.resultList store index for task
+			this.resultIndex++
 		));
 
 		this.taskActiveCount++;
@@ -59,66 +60,98 @@ FuncQueue.prototype.complete = function(callback) {
 	return this;
 };
 
-function execTask(task,argumentList,resultListIndex) {
+function execTask(task,argumentList,resultIndex) {
 
-	var self = this;
+	var self = this,
+		callbackHandled;
 
-	// add complete callback to argument list
-	argumentList.push(function(err,result) {
+	// execute task - adding 'complete' callback function to argument list
+	try {
+		task.apply(this,argumentList.concat(
+			function(err,result) {
 
-		// callback will finish up task on next tick
+				// ensures callback is called only once from task
+				if (callbackHandled) {
+					return;
+				}
+
+				// finish up task upon next tick
+				callbackHandled = true;
+				process.nextTick(function() {
+
+					execTaskComplete(
+						self,err,result,
+						resultIndex
+					);
+				});
+			}
+		));
+
+	} catch (ex) {
+		// caught thrown exception from task
 		process.nextTick(function() {
 
-			execTaskComplete(
-				self,resultListIndex,
-				err,result
-			);
+			execTaskComplete(self,ex);
 		});
-	});
-
-	// call task
-	task.apply(this,argumentList);
+	}
 }
 
-function execTaskComplete(self,resultListIndex,err,result) {
+function execTaskComplete(self,err,result,resultIndex) {
 
 	if (self.taskQueue === false) {
-		// if we enter this path - a prior task has called back in error
-		// so throw away this, and any further returning callback task data
+		// if we enter this path a prior task has finished in error
+		// so throw away this and any future returned task results
 		return;
 	}
 
 	if (err) {
-		// task callback returned error - complete queue right now, in error
-		self.taskQueue = false;
-		self.taskActiveCount = 0;
-
-		return callCompleteCallback(self,err);
+		// task callback returned error - finish queue right now in error & ignore result list
+		return finishQueue(self,err);
 	}
 
-	// save result returned from task and decrement active task count
-	self.resultList[resultListIndex] = result;
+	// save result from task into collection index slot (if returned) & decrement active task count
+	if (result !== undefined) {
+		self.resultCollection[resultIndex] = result;
+		self.haveResult = true;
+	}
+
 	self.taskActiveCount--;
 
 	// further tasks in queue?
 	if (self.taskQueue.length > 0) {
-		// call add task method to execute more tasks if able
+		// call add task method to execute any further available tasks
 		self.addTask();
 
 	} else if (self.taskActiveCount < 1) {
 		// queue depleted and no active tasks - no more tasks accepted
-		self.taskQueue = false;
-		callCompleteCallback(self,null,self.resultList);
+		finishQueue(self,null,self.resultCollection);
 	}
 }
 
-function callCompleteCallback(self,err,resultList) {
+function finishQueue(self,err,resultCollection) {
+
+	// compile final result list from collection
+	var resultList;
+
+	if (!err && self.haveResult) {
+		// if not a single result returned from all tasks - no need to work resultCollection
+		resultList = [];
+
+		for (var resultIndex = 0,resultIndexCount = self.resultIndex;resultIndex < resultIndexCount;resultIndex++) {
+			var resultValue = resultCollection[resultIndex];
+			if (resultValue !== undefined) {
+				resultList.push(resultValue);
+			}
+		}
+	}
+
+	// ensure no further tasks can be added to queue
+	self.taskQueue = false;
+	self.taskActiveCount = 0;
+	self.resultCollection = null;
 
 	if (self.completeCallback) {
-		// call complete callback after next tick
-		process.nextTick(function() {
-
-			self.completeCallback(err,resultList);
-		});
+		// call complete callback
+		self.completeCallback(err,resultList);
 	}
 }

@@ -8,15 +8,16 @@ var SET_TIMEOUT_TEST_DELAY = 20,
 	funcQueue = require('../index.js');
 
 
-function getArraySequence(limit) {
+function getArraySequenceList(limit) {
 
-	var sequence = [];
+	var sequenceList = [];
 	for (var seq = 1;seq <= limit;seq++) {
-		sequence.push(seq);
+		sequenceList.push(seq);
 	}
 
-	return sequence;
+	return sequenceList;
 }
+
 
 (function() {
 
@@ -30,7 +31,7 @@ function getArraySequence(limit) {
 	);
 
 	assert(
-		testFuncQueue.resultList.length == 0,
+		Object.keys(testFuncQueue.resultCollection).length == 0,
 		'Result list should be empty'
 	);
 
@@ -85,7 +86,7 @@ function getArraySequence(limit) {
 	}
 
 	// queue up dummy tasks
-	getArraySequence(6).forEach(function(number) {
+	getArraySequenceList(6).forEach(function(number) {
 
 		testFuncQueue.addTask(testTask,'Task ' + number);
 	});
@@ -104,7 +105,7 @@ function getArraySequence(limit) {
 (function() {
 
 	var TEST_RUN_PARALLEL_COUNT = 4,
-		TEST_RUN_WAVES = 3,
+		TEST_RUN_WAVES = 3, // running 12 tasks total (4 * 3)
 		testFuncQueue = funcQueue(TEST_RUN_PARALLEL_COUNT),
 		workCallbackSimulatorList = [],
 		activeTaskCount = 0;
@@ -114,7 +115,7 @@ function getArraySequence(limit) {
 
 		activeTaskCount++;
 
-		addWorkCallbackSimulator(
+		workCallbackSimulatorList.push(
 			function() {
 
 				assert(
@@ -128,17 +129,12 @@ function getArraySequence(limit) {
 		);
 	}
 
-	function addWorkCallbackSimulator(callback) {
-
-		workCallbackSimulatorList.push(callback);
-	}
-
 	function runWorkCallbackLoop() {
 
 		// call back next work task
 		workCallbackSimulatorList.shift()();
 
-		// queue up next loop if more work
+		// queue up next loop if more work items in list
 		if (workCallbackSimulatorList.length > 0) {
 			setTimeout(runWorkCallbackLoop,SET_TIMEOUT_TEST_DELAY);
 		}
@@ -146,7 +142,7 @@ function getArraySequence(limit) {
 
 	// queue up dummy tasks
 	var expectedTaskCount = (TEST_RUN_PARALLEL_COUNT * TEST_RUN_WAVES);
-	getArraySequence(TEST_RUN_PARALLEL_COUNT * TEST_RUN_WAVES).forEach(function(number) {
+	getArraySequenceList(TEST_RUN_PARALLEL_COUNT * TEST_RUN_WAVES).forEach(function(number) {
 
 		testFuncQueue.addTask(
 			testTask,
@@ -170,6 +166,41 @@ function getArraySequence(limit) {
 
 	// kick off the work simulation
 	setTimeout(runWorkCallbackLoop,SET_TIMEOUT_TEST_DELAY);
+})();
+
+
+(function() {
+
+	var testFuncQueue = funcQueue();
+
+	// dummy task which returns a result via callback - except for tasks 2 and 5
+	function testTask(returnValue,callback) {
+
+		if (
+			(returnValue != 'Task 2') &&
+			(returnValue != 'Task 5')
+		) {
+			return callback(null,returnValue);
+		}
+
+		// finish task without result returned
+		callback(null);
+	}
+
+	// queue up dummy tasks
+	getArraySequenceList(12).forEach(function(number) {
+
+		testFuncQueue.addTask(testTask,'Task ' + number);
+	});
+
+	testFuncQueue.complete(function(err,resultList) {
+
+		assert.deepEqual(
+			resultList,
+			['Task 1','Task 3','Task 4','Task 6','Task 7','Task 8','Task 9','Task 10','Task 11','Task 12'],
+			'Expected result list different to actual'
+		);
+	});
 })();
 
 
@@ -231,7 +262,54 @@ function getArraySequence(limit) {
 	}
 
 	// queue up dummy tasks
-	getArraySequence(16).forEach(function(number) {
+	getArraySequenceList(16).forEach(function(number) {
+
+		testFuncQueue.addTask(testTask,'Task ' + number);
+	});
+
+	testFuncQueue.complete(function(err,resultList) {
+
+		// note: tasks are queued to TEST_RUN_PARALLEL_COUNT chunks
+		// thus number of called tasks will be beyond that of task returning error
+		assert.deepEqual(
+			taskCalledList,
+			['Task 1','Task 2','Task 3','Task 4'],
+			'Expected called task list different to actual'
+		);
+
+		assert.deepEqual(
+			taskSuccessList,
+			['Task 1','Task 2','Task 4'],
+			'Expected success task list different to actual'
+		);
+	});
+})();
+
+
+(function() {
+
+	var testFuncQueue = funcQueue(),
+		taskErrorObj = new Error('Task error'),
+		taskCalledList = [],
+		taskSuccessList = [];
+
+
+	// dummy task will throw an error on 6th task called
+	function testTask(returnValue,callback) {
+
+		taskCalledList.push(returnValue);
+
+		if (returnValue == 'Task 6') {
+			throw taskErrorObj;
+
+		} else {
+			callback(null,returnValue);
+			taskSuccessList.push(returnValue);
+		}
+	}
+
+	// queue up dummy tasks
+	getArraySequenceList(16).forEach(function(number) {
 
 		testFuncQueue.addTask(testTask,'Task ' + number);
 	});
@@ -248,8 +326,52 @@ function getArraySequence(limit) {
 
 		assert.deepEqual(
 			taskSuccessList,
-			['Task 1','Task 2','Task 4','Task 5','Task 6'],
+			['Task 1','Task 2','Task 3','Task 4','Task 5'],
 			'Expected success task list different to actual'
+		);
+
+		assert(
+			err === taskErrorObj,
+			'Expected complete callback to receive thrown error'
+		);
+
+		assert(
+			resultList === undefined,
+			'Complete callback should receive no results upon error raised'
+		);
+	});
+})();
+
+
+(function() {
+
+	var testFuncQueue = funcQueue();
+
+	// dummy task which returns a result via callback - then calls callback again with error
+	// this second callback should be ignored - which is what we are testing
+	function testTask(returnValue,callback) {
+
+		callback(null,returnValue);
+		callback(new Error('Task error'));
+	}
+
+	// queue up dummy tasks
+	getArraySequenceList(6).forEach(function(number) {
+
+		testFuncQueue.addTask(testTask,'Task ' + number);
+	});
+
+	testFuncQueue.complete(function(err,resultList) {
+
+		assert(
+			err === null,
+			'Error returned expected to be null (no error)'
+		);
+
+		assert.deepEqual(
+			resultList,
+			['Task 1','Task 2','Task 3','Task 4','Task 5','Task 6'],
+			'Expected result list different to actual'
 		);
 	});
 })();
@@ -261,7 +383,7 @@ function getArraySequence(limit) {
 		testFuncQueue = funcQueue(TEST_RUN_PARALLEL_COUNT);
 
 
-	// dummy task will add additional tests on the fourth and fifth task calls
+	// dummy task will add additional tasks on the fourth and fifth calls
 	function testTask(returnValue,callback) {
 
 		if (returnValue == 'Task 4') {
@@ -276,7 +398,7 @@ function getArraySequence(limit) {
 	}
 
 	// queue up dummy tasks
-	getArraySequence(6).forEach(function(number) {
+	getArraySequenceList(6).forEach(function(number) {
 
 		testFuncQueue.addTask(testTask,'Task ' + number);
 	});

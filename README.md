@@ -3,6 +3,12 @@ A really low-fi function queue manager module for Node.js to ease the pain of bu
 
 [![NPM](https://nodei.co/npm/funcqueue.png?downloads=true)](https://nodei.co/npm/funcqueue/)
 
+- [Usage](#usage)
+- [Methods](#methods)
+	- [funcQueue(parallelCount)](#funcqueueparallelcount)
+	- [funcQueue.addTask(callback[,arguments...])](#funcqueueaddtaskcallbackarguments)
+	- [funcQueue.complete(callback)](#funcqueuecompletecallback)
+
 ## Usage
 
 ```js
@@ -44,16 +50,16 @@ All done!
 ## Methods
 
 ### funcQueue(parallelCount)
-Create a new function queue. The `parallelCount` argument controls how many tasks will be executed at any one moment, if not given will default to `1` - thus all tasks will run serially.
+- Creates a new function queue.
+- The `parallelCount` argument controls how many tasks will be executing at any one moment, if not defined will default to `1` - thus tasks will run serially.
 
 ### funcQueue.addTask(callback[,arguments...])
-Adds a new task function `callback` to the queue. Optional `arguments` can be passed to the function.
-
-Task upon execution will receive all passed arguments, along with a callback function which *must* be called at completion of task to notify funcQueue.
-
-This callback in turn accepts two optional arguments - an error (if any raised) and the task result - keeping in the style of Node.js 'error first' callbacks.
-
-In the case an error is passed back, currently running parallel tasks will continue to completion - future queue tasks will *not* be executed.
+- Adds a new task function `callback` to the queue. Optional `arguments` can be passed to the function.
+- Upon execution task will receive all passed arguments, along with a callback function which *must* be called at completion of task to notify funcQueue instance.
+- Task callback in turn accepts two optional arguments - an error (if any raised) and a task result - keeping in the style of Node.js 'error first' callbacks.
+- Any errors _thrown_ by task functions will be caught by funcQueue and trigger the error path (e.g. same behaviour as passing an error to task callback).
+- A task is not required to return a result - in this instance `undefined` is passed, it will be ommited from the result list passed to [funcQueue.complete(callback)](#funcqueuecompletecallback).
+- In the case of an error returned, currently running parallel tasks will continue to completion with their resutls ignored - future queue tasks will *not* be executed.
 
 As an example:
 
@@ -73,7 +79,7 @@ myFuncQueue.addTask(
 );
 ```
 
-In addition, task callbacks will be passed their associated funcQueue instance - this allows for the chaining of further conditional tasks from within task items themselves. For example:
+In addition, task callbacks will be passed their parent funcQueue instance - allowing for the chaining of further conditional tasks from within tasks themselves:
 
 ```js
 myFuncQueue.addTask(
@@ -95,16 +101,16 @@ myFuncQueue.addTask(
 ```
 
 ### funcQueue.complete(callback)
-Assigns a callback that will be executed at competition of all defined tasks. This callback will be passed two arguments (Node.js 'error first' style), an error (if any) and an array of results from each task executed returned via its callback.
-
-In the case of an error being returned from any task, the result list will be `undefined`:
+- Assigns a callback that will be executed at the competition of all defined tasks.
+- Callback is passed two arguments (Node.js 'error first' style), an error (if any) and an array of not `undefined` results from each task executed in the queue.
+- In the case of an error being returned from any task, result list will be `undefined`:
 
 ```js
 myFuncQueue.complete(function(err,resultList) {
 
 	if (err) {
 		// uh, oh an error
-		console.log(resultList); // undefined
+		console.log(resultList); // prints undefined
 		return;
 	}
 
