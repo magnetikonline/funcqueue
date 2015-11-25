@@ -31,8 +31,8 @@ function getArraySequenceList(limit) {
 	);
 
 	assert(
-		Object.keys(testFuncQueue.resultCollection).length == 0,
-		'Result list should be empty'
+		testFuncQueue.resultCollection === null,
+		'Result collection should be null'
 	);
 
 	assert(
@@ -166,6 +166,33 @@ function getArraySequenceList(limit) {
 
 	// kick off the work simulation
 	setTimeout(runWorkCallbackLoop,SET_TIMEOUT_TEST_DELAY);
+})();
+
+
+(function() {
+
+	var testFuncQueue = funcQueue();
+
+	// run a single task that returns no result
+	testFuncQueue.addTask(
+		function(callback) {
+
+			callback(null);
+		}
+	);
+
+	testFuncQueue.complete(function(err,resultList) {
+
+		assert(
+			err === null,
+			'Expected complete callback to receive null error object'
+		);
+
+		assert(
+			Array.isArray(resultList) && (resultList.length == 0),
+			'Complete callback should receive an empty result list array'
+		);
+	});
 })();
 
 

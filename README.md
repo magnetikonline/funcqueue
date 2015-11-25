@@ -102,7 +102,7 @@ myFuncQueue.addTask(
 
 ### funcQueue.complete(callback)
 - Assigns a callback that will be executed at the competition of all defined tasks.
-- Callback is passed two arguments (Node.js 'error first' style), an error (if any) and an array of not `undefined` results from each task executed in the queue.
+- Callback is passed two arguments (Node.js 'error first' style) - an error (if any) and array of not `undefined` results from each task executed in queue.
 - In the case of an error being returned from any task, result list will be `undefined`:
 
 ```js

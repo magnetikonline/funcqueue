@@ -14,8 +14,7 @@ function FuncQueue(parallelCount) {
 	this.taskQueue = [];
 	this.taskActiveCount = 0;
 	this.resultIndex = 0;
-	this.resultCollection = {};
-	this.haveResult = false;
+	this.resultCollection = null;
 	this.completeCallback = null;
 }
 
@@ -52,7 +51,7 @@ FuncQueue.prototype.addTask = function(callback) {
 
 FuncQueue.prototype.complete = function(callback) {
 
-	if (!this.completeCallback) {
+	if (this.completeCallback === null) {
 		this.completeCallback = callback;
 	}
 
@@ -111,8 +110,11 @@ function execTaskComplete(self,err,result,resultIndex) {
 
 	// save result from task into collection index slot (if returned) & decrement active task count
 	if (result !== undefined) {
+		if (self.resultCollection === null) {
+			self.resultCollection = {};
+		}
+
 		self.resultCollection[resultIndex] = result;
-		self.haveResult = true;
 	}
 
 	self.taskActiveCount--;
@@ -133,14 +135,16 @@ function finishQueue(self,err,resultCollection) {
 	// compile final result list from collection
 	var resultList;
 
-	if (!err && self.haveResult) {
-		// if not a single result returned from all tasks - no need to work resultCollection
+	if (!err) {
 		resultList = [];
 
-		for (var resultIndex = 0,resultIndexCount = self.resultIndex;resultIndex < resultIndexCount;resultIndex++) {
-			var resultValue = resultCollection[resultIndex];
-			if (resultValue !== undefined) {
-				resultList.push(resultValue);
+		if (self.resultCollection !== null) {
+			// if not a single result returned from all tasks - no need to work resultCollection
+			for (var resultIndex = 0,resultIndexCount = self.resultIndex;resultIndex < resultIndexCount;resultIndex++) {
+				var resultValue = resultCollection[resultIndex];
+				if (resultValue !== undefined) {
+					resultList.push(resultValue);
+				}
 			}
 		}
 	}
@@ -150,7 +154,7 @@ function finishQueue(self,err,resultCollection) {
 	self.taskActiveCount = 0;
 	self.resultCollection = null;
 
-	if (self.completeCallback) {
+	if (self.completeCallback !== null) {
 		// call complete callback
 		self.completeCallback(err,resultList);
 	}
