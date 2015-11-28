@@ -200,6 +200,29 @@ function getArraySequenceList(limit) {
 
 	var testFuncQueue = funcQueue();
 
+	// run a single task that returns no result - not passing anything to callback()
+	// still expecting complete callback to receive null as the error object
+	testFuncQueue.addTask(
+		function(callback) {
+
+			callback();
+		}
+	);
+
+	testFuncQueue.complete(function(err,resultList) {
+
+		assert(
+			err === null,
+			'Expected complete callback to receive null error object'
+		);
+	});
+})();
+
+
+(function() {
+
+	var testFuncQueue = funcQueue();
+
 	// dummy task which returns a result via callback - except for tasks 2 and 5
 	function testTask(returnValue,callback) {
 
@@ -375,7 +398,7 @@ function getArraySequenceList(limit) {
 	var testFuncQueue = funcQueue();
 
 	// dummy task which returns a result via callback - then calls callback again with error
-	// this second callback should be ignored - which is what we are testing
+	// this second callback must be ignored by funcQueue instance
 	function testTask(returnValue,callback) {
 
 		callback(null,returnValue);
