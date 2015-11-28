@@ -45,7 +45,7 @@ function getArraySequenceList(limit) {
 		'Function complete() should return itself'
 	);
 
-	// try to assign a different complete callback function
+	// try to reassign a different complete callback function
 	testFuncQueue.complete(function() {});
 
 	assert(

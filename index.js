@@ -121,21 +121,22 @@ function execTaskComplete(self,err,result,resultIndex) {
 
 	// further tasks in queue?
 	if (self.taskQueue.length > 0) {
-		// call add task method to execute any further available tasks
+		// call add task method to execute any further tasks
 		self.addTask();
 
 	} else if (self.taskActiveCount < 1) {
-		// queue depleted and no active tasks - no more tasks accepted
+		// queue depleted and no other active tasks - finish up
 		finishQueue(self,null,self.resultCollection);
 	}
 }
 
 function finishQueue(self,err,resultCollection) {
 
-	// compile final result list from collection
-	var resultList;
+	var resultList,
+		hasCallback = (self.completeCallback !== null);
 
-	if (!err) {
+	if (!err && hasCallback) {
+		// compile final result list from collection
 		resultList = [];
 
 		if (self.resultCollection !== null) {
@@ -149,12 +150,12 @@ function finishQueue(self,err,resultCollection) {
 		}
 	}
 
-	// ensure no further tasks can be added to queue
+	// setting (self.taskQueue === false) ensures no further tasks are allowed
 	self.taskQueue = false;
 	self.taskActiveCount = 0;
 	self.resultCollection = null;
 
-	if (self.completeCallback !== null) {
+	if (hasCallback) {
 		// call complete callback
 		self.completeCallback(err,resultList);
 	}
