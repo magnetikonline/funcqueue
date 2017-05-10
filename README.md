@@ -115,5 +115,5 @@ myFuncQueue.complete(function(err,resultList) {
 	}
 
 	console.dir(resultList);
-}
+});
 ```
