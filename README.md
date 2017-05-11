@@ -5,7 +5,7 @@ A really low-fi function queue manager module for Node.js 6+ to ease the pain of
 
 - [Usage](#usage)
 - [Methods](#methods)
-	- [FuncQueue(parallelCount)](#funcqueueparallelcount)
+	- [FuncQueue([parallelCount])](#funcqueueparallelcount)
 	- [FuncQueue.addTask(callback[,arguments...])](#funcqueueaddtaskcallbackarguments)
 	- [FuncQueue.complete(callback)](#funcqueuecompletecallback)
 
@@ -49,9 +49,9 @@ All done!
 
 ## Methods
 
-### FuncQueue(parallelCount)
+### FuncQueue([parallelCount])
 - Creates new `FuncQueue` instance.
-- Optional `parallelCount` argument controls how many tasks will execute at any moment, if not defined will default to `1` - thus tasks run serially.
+- Optional `parallelCount` controls how many tasks will execute at any moment, if not defined will default to `1` - thus tasks run serially.
 
 ### FuncQueue.addTask(callback[,arguments...])
 - Adds a new task function `callback` to the `FuncQueue` queue.
@@ -64,7 +64,7 @@ All done!
 - Tasks are _not required_ to return a result - in this instance `undefined` is passed back and will be omitted from the finalised result list supplied to [FuncQueue.complete(callback)](#funcqueuecompletecallback).
 - In the case of an error returned, currently running parallel tasks will continue to completion with their results ignored - future queue tasks will *not* be executed.
 
-As an example:
+Example:
 
 ```js
 myFuncQueue
@@ -103,7 +103,7 @@ myFuncQueue
 ```
 
 ### FuncQueue.complete(callback)
-- Assigns a callback that will be executed at the competition of all defined tasks.
+- Assigns a callback that will be executed at competition of all defined tasks.
 - Callback is passed two arguments - Node.js 'error first' style:
 	- Error value/object (if returned/thrown).
 	- Array of results from each `addTask()` item in queue, unless error where result list will be `undefined`.
@@ -114,7 +114,7 @@ myFuncQueue
 
 		if (err) {
 			// uh, oh an error
-			console.log(resultList); // prints undefined
+			console.log(resultList); // undefined
 			return;
 		}
 
