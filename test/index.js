@@ -1,17 +1,17 @@
 'use strict';
 
-var SET_TIMEOUT_TEST_DELAY = 20,
-
-	assert = require('assert'),
+let assert = require('assert'),
 	util = require('util'),
 
-	funcQueue = require('../index.js');
+	FuncQueue = require('../index.js'),
+
+	SET_TIMEOUT_TEST_DELAY = 20;
 
 
-function getArraySequenceList(limit) {
+function getSequenceList(limit) {
 
-	var sequenceList = [];
-	for (var seq = 1;seq <= limit;seq++) {
+	let sequenceList = [];
+	for (let seq = 1;seq <= limit;seq++) {
 		sequenceList.push(seq);
 	}
 
@@ -19,20 +19,20 @@ function getArraySequenceList(limit) {
 }
 
 
-(function() {
+{
+	let TEST_RUN_PARALLEL_COUNT = 4,
 
-	var TEST_RUN_PARALLEL_COUNT = 4,
-		testFuncQueue = funcQueue(TEST_RUN_PARALLEL_COUNT),
-		dummyFunction = function() {};
+		testFuncQueue = new FuncQueue(TEST_RUN_PARALLEL_COUNT),
+		dummyFunction = () => {};
 
 	assert(
 		testFuncQueue.parallelCount == TEST_RUN_PARALLEL_COUNT,
-		'Run parallel task count should equal ' + TEST_RUN_PARALLEL_COUNT
+		`Run parallel task count should equal $(TEST_RUN_PARALLEL_COUNT}`
 	);
 
 	assert(
-		testFuncQueue.resultCollection === null,
-		'Result collection should be null'
+		testFuncQueue.resultCollection === undefined,
+		'Result collection should be undefined'
 	);
 
 	assert(
@@ -45,19 +45,18 @@ function getArraySequenceList(limit) {
 		'Function complete() should return itself'
 	);
 
-	// try to reassign a different complete callback function
-	testFuncQueue.complete(function() {});
+	// try to assign a different complete callback function
+	testFuncQueue.complete(() => {});
 
 	assert(
 		testFuncQueue.completeCallback === dummyFunction,
 		'Function for complete callback can only be set once'
 	);
-})();
+}
 
 
-(function() {
-
-	var testFuncQueue = funcQueue(),
+{
+	let testFuncQueue = new FuncQueue(),
 		activeTaskCount = 0;
 
 	assert(
@@ -71,7 +70,7 @@ function getArraySequenceList(limit) {
 		activeTaskCount++;
 
 		setTimeout(
-			function() {
+			() => {
 
 				assert(
 					activeTaskCount == 1,
@@ -86,12 +85,11 @@ function getArraySequenceList(limit) {
 	}
 
 	// queue up dummy tasks
-	getArraySequenceList(6).forEach(function(number) {
+	for (let number of getSequenceList(6)) {
+		testFuncQueue.addTask(testTask,`Task ${number}`);
+	}
 
-		testFuncQueue.addTask(testTask,'Task ' + number);
-	});
-
-	testFuncQueue.complete(function(err,resultList) {
+	testFuncQueue.complete((err,resultList) => {
 
 		assert.deepEqual(
 			resultList,
@@ -99,14 +97,14 @@ function getArraySequenceList(limit) {
 			'Expected result list different to actual'
 		);
 	});
-})();
+}
 
 
-(function() {
-
-	var TEST_RUN_PARALLEL_COUNT = 4,
+{
+	let TEST_RUN_PARALLEL_COUNT = 4,
 		TEST_RUN_WAVES = 3, // running 12 tasks total (4 * 3)
-		testFuncQueue = funcQueue(TEST_RUN_PARALLEL_COUNT),
+
+		testFuncQueue = new FuncQueue(TEST_RUN_PARALLEL_COUNT),
 		workCallbackSimulatorList = [],
 		activeTaskCount = 0;
 
@@ -115,18 +113,17 @@ function getArraySequenceList(limit) {
 
 		activeTaskCount++;
 
-		workCallbackSimulatorList.push(
-			function() {
+		// push work item onto list
+		workCallbackSimulatorList.push(() => {
 
-				assert(
-					activeTaskCount == expectedTaskCount,
-					'Active running task count should be ' + expectedTaskCount
-				);
+			assert(
+				activeTaskCount == expectedTaskCount,
+				`Active running task count should be ${expectedTaskCount}`
+			);
 
-				activeTaskCount--;
-				callback(null,returnValue);
-			}
-		);
+			activeTaskCount--;
+			callback(null,returnValue);
+		});
 	}
 
 	function runWorkCallbackLoop() {
@@ -141,21 +138,24 @@ function getArraySequenceList(limit) {
 	}
 
 	// queue up dummy tasks
-	var expectedTaskCount = (TEST_RUN_PARALLEL_COUNT * TEST_RUN_WAVES);
-	getArraySequenceList(TEST_RUN_PARALLEL_COUNT * TEST_RUN_WAVES).forEach(function(number) {
+	{
+		let expectedTaskCount = (TEST_RUN_PARALLEL_COUNT * TEST_RUN_WAVES);
 
-		testFuncQueue.addTask(
-			testTask,
-			(expectedTaskCount > TEST_RUN_PARALLEL_COUNT)
-				? TEST_RUN_PARALLEL_COUNT
-				: expectedTaskCount,
-			'Task ' + number
-		);
+		for (let number of getSequenceList(expectedTaskCount)) {
+			testFuncQueue.addTask(
+				testTask,
+				// should never be more than TEST_RUN_PARALLEL_COUNT active tasks
+				(expectedTaskCount > TEST_RUN_PARALLEL_COUNT)
+					? TEST_RUN_PARALLEL_COUNT
+					: expectedTaskCount,
+				`Task ${number}`
+			);
 
-		expectedTaskCount--;
-	});
+			expectedTaskCount--;
+		}
+	}
 
-	testFuncQueue.complete(function(err,resultList) {
+	testFuncQueue.complete((err,resultList) => {
 
 		assert.deepEqual(
 			resultList,
@@ -164,24 +164,57 @@ function getArraySequenceList(limit) {
 		);
 	});
 
-	// kick off the work simulation
+	// start work simulation
 	setTimeout(runWorkCallbackLoop,SET_TIMEOUT_TEST_DELAY);
-})();
+}
 
 
-(function() {
+{
+	let TEST_RUN_PARALLEL_COUNT = 8,
 
-	var testFuncQueue = funcQueue();
+		testFuncQueue = new FuncQueue(TEST_RUN_PARALLEL_COUNT);
+
+	// dummy task will callback at random timeouts, testing result list is in source task order
+	function testTask(returnValue,callback) {
+
+		setTimeout(
+			() => {
+
+				callback(null,returnValue);
+			},
+			Math.floor(Math.random() * SET_TIMEOUT_TEST_DELAY) + 1
+		);
+	}
+
+	// queue up dummy tasks
+	for (let number of getSequenceList(TEST_RUN_PARALLEL_COUNT * 2)) {
+		testFuncQueue.addTask(testTask,`Task ${number}`);
+	}
+
+	testFuncQueue.complete((err,resultList) => {
+
+		assert.deepEqual(
+			resultList,
+			[
+				'Task 1','Task 2','Task 3','Task 4','Task 5','Task 6','Task 7','Task 8',
+				'Task 9','Task 10','Task 11','Task 12','Task 13','Task 14','Task 15','Task 16'
+			],
+			'Expected called task list different to actual'
+		);
+	});
+}
+
+
+{
+	let testFuncQueue = new FuncQueue();
 
 	// run a single task that returns no result
-	testFuncQueue.addTask(
-		function(callback) {
+	testFuncQueue.addTask((callback) => {
 
-			callback(null);
-		}
-	);
+		callback(null);
+	});
 
-	testFuncQueue.complete(function(err,resultList) {
+	testFuncQueue.complete((err,resultList) => {
 
 		assert(
 			err === null,
@@ -193,57 +226,50 @@ function getArraySequenceList(limit) {
 			'Complete callback should receive an empty result list array'
 		);
 	});
-})();
+}
 
 
-(function() {
+{
+	let testFuncQueue = new FuncQueue();
 
-	var testFuncQueue = funcQueue();
+	// run a single task that returns no result and passes nothing to callback()
+	// still expect complete callback to receive error object of null
+	testFuncQueue.addTask((callback) => {
 
-	// run a single task that returns no result - not passing anything to callback()
-	// still expecting complete callback to receive null as the error object
-	testFuncQueue.addTask(
-		function(callback) {
+		callback();
+	});
 
-			callback();
-		}
-	);
-
-	testFuncQueue.complete(function(err,resultList) {
+	testFuncQueue.complete((err,resultList) => {
 
 		assert(
 			err === null,
 			'Expected complete callback to receive null error object'
 		);
 	});
-})();
+}
 
 
-(function() {
-
-	var testFuncQueue = funcQueue();
+{
+	let testFuncQueue = new FuncQueue();
 
 	// dummy task which returns a result via callback - except for tasks 2 and 5
 	function testTask(returnValue,callback) {
 
-		if (
-			(returnValue != 'Task 2') &&
-			(returnValue != 'Task 5')
-		) {
-			return callback(null,returnValue);
+		if (['Task 2','Task 5'].includes(returnValue)) {
+			// finish task without result returned
+			// note: falling through to second callback() on purpose to confirm callback() can only be called once per task
+			callback(null);
 		}
 
-		// finish task without result returned
-		callback(null);
+		callback(null,returnValue);
 	}
 
 	// queue up dummy tasks
-	getArraySequenceList(12).forEach(function(number) {
+	for (let number of getSequenceList(12)) {
+		testFuncQueue.addTask(testTask,`Task ${number}`);
+	}
 
-		testFuncQueue.addTask(testTask,'Task ' + number);
-	});
-
-	testFuncQueue.complete(function(err,resultList) {
+	testFuncQueue.complete((err,resultList) => {
 
 		assert.deepEqual(
 			resultList,
@@ -251,33 +277,29 @@ function getArraySequenceList(limit) {
 			'Expected result list different to actual'
 		);
 	});
-})();
+}
 
 
-(function() {
+{
+	let TEST_RUN_PARALLEL_COUNT = 4,
 
-	var TEST_RUN_PARALLEL_COUNT = 4,
-		testFuncQueue = funcQueue(TEST_RUN_PARALLEL_COUNT),
-		taskErrorObj = new Error('Task error');
+		testFuncQueue = new FuncQueue(TEST_RUN_PARALLEL_COUNT),
+		taskError = new Error('Task error');
 
-	testFuncQueue.addTask(
-		function(callback) {
+	testFuncQueue.addTask((callback) => {
 
-			callback(null,'Task success');
-		}
-	);
+		callback(null,'Task success');
+	});
 
-	testFuncQueue.addTask(
-		function(callback) {
+	testFuncQueue.addTask((callback) => {
 
-			callback(taskErrorObj);
-		}
-	);
+		callback(taskError);
+	});
 
-	testFuncQueue.complete(function(err,resultList) {
+	testFuncQueue.complete((err,resultList) => {
 
 		assert(
-			err === taskErrorObj,
+			err === taskError,
 			'Expected complete callback to receive thrown error'
 		);
 
@@ -286,16 +308,15 @@ function getArraySequenceList(limit) {
 			'Complete callback should receive no results upon error raised'
 		);
 	});
-})();
+}
 
 
-(function() {
+{
+	let TEST_RUN_PARALLEL_COUNT = 4,
 
-	var TEST_RUN_PARALLEL_COUNT = 4,
-		testFuncQueue = funcQueue(TEST_RUN_PARALLEL_COUNT),
+		testFuncQueue = new FuncQueue(TEST_RUN_PARALLEL_COUNT),
 		taskCalledList = [],
 		taskSuccessList = [];
-
 
 	// dummy task will simulate failure on the 3rd task called
 	function testTask(returnValue,callback) {
@@ -303,21 +324,19 @@ function getArraySequenceList(limit) {
 		taskCalledList.push(returnValue);
 
 		if (returnValue == 'Task 3') {
-			callback(new Error('Task error'));
-
-		} else {
-			callback(null,returnValue);
-			taskSuccessList.push(returnValue);
+			return callback(new Error('Task error'));
 		}
+
+		callback(null,returnValue);
+		taskSuccessList.push(returnValue);
 	}
 
 	// queue up dummy tasks
-	getArraySequenceList(16).forEach(function(number) {
+	for (let number of getSequenceList(16)) {
+		testFuncQueue.addTask(testTask,`Task ${number}`);
+	}
 
-		testFuncQueue.addTask(testTask,'Task ' + number);
-	});
-
-	testFuncQueue.complete(function(err,resultList) {
+	testFuncQueue.complete((err,resultList) => {
 
 		// note: tasks are queued to TEST_RUN_PARALLEL_COUNT chunks
 		// thus number of called tasks will be beyond that of task returning error
@@ -333,16 +352,14 @@ function getArraySequenceList(limit) {
 			'Expected success task list different to actual'
 		);
 	});
-})();
+}
 
 
-(function() {
-
-	var testFuncQueue = funcQueue(),
-		taskErrorObj = new Error('Task error'),
+{
+	let testFuncQueue = new FuncQueue(),
+		taskError = new Error('Task error'),
 		taskCalledList = [],
 		taskSuccessList = [];
-
 
 	// dummy task will throw an error on 6th task called
 	function testTask(returnValue,callback) {
@@ -350,21 +367,19 @@ function getArraySequenceList(limit) {
 		taskCalledList.push(returnValue);
 
 		if (returnValue == 'Task 6') {
-			throw taskErrorObj;
-
-		} else {
-			callback(null,returnValue);
-			taskSuccessList.push(returnValue);
+			throw taskError;
 		}
+
+		callback(null,returnValue);
+		taskSuccessList.push(returnValue);
 	}
 
 	// queue up dummy tasks
-	getArraySequenceList(16).forEach(function(number) {
+	for (let number of getSequenceList(16)) {
+		testFuncQueue.addTask(testTask,`Task ${number}`);
+	}
 
-		testFuncQueue.addTask(testTask,'Task ' + number);
-	});
-
-	testFuncQueue.complete(function(err,resultList) {
+	testFuncQueue.complete((err,resultList) => {
 
 		// note: tasks are queued to TEST_RUN_PARALLEL_COUNT chunks
 		// thus number of called tasks will be beyond that of task returning error
@@ -381,7 +396,7 @@ function getArraySequenceList(limit) {
 		);
 
 		assert(
-			err === taskErrorObj,
+			err === taskError,
 			'Expected complete callback to receive thrown error'
 		);
 
@@ -390,15 +405,14 @@ function getArraySequenceList(limit) {
 			'Complete callback should receive no results upon error raised'
 		);
 	});
-})();
+}
 
 
-(function() {
-
-	var testFuncQueue = funcQueue();
+{
+	let testFuncQueue = new FuncQueue();
 
 	// dummy task which returns a result via callback - then calls callback again with error
-	// this second callback must be ignored by funcQueue instance
+	// this second callback should be ignored by FuncQueue instance
 	function testTask(returnValue,callback) {
 
 		callback(null,returnValue);
@@ -406,12 +420,11 @@ function getArraySequenceList(limit) {
 	}
 
 	// queue up dummy tasks
-	getArraySequenceList(6).forEach(function(number) {
+	for (let number of getSequenceList(6)) {
+		testFuncQueue.addTask(testTask,`Task ${number}`);
+	}
 
-		testFuncQueue.addTask(testTask,'Task ' + number);
-	});
-
-	testFuncQueue.complete(function(err,resultList) {
+	testFuncQueue.complete((err,resultList) => {
 
 		assert(
 			err === null,
@@ -424,14 +437,13 @@ function getArraySequenceList(limit) {
 			'Expected result list different to actual'
 		);
 	});
-})();
+}
 
 
-(function() {
+{
+	let TEST_RUN_PARALLEL_COUNT = 4,
 
-	var TEST_RUN_PARALLEL_COUNT = 4,
-		testFuncQueue = funcQueue(TEST_RUN_PARALLEL_COUNT);
-
+		testFuncQueue = new FuncQueue(TEST_RUN_PARALLEL_COUNT);
 
 	// dummy task will add additional tasks on the fourth and fifth calls
 	function testTask(returnValue,callback) {
@@ -448,12 +460,11 @@ function getArraySequenceList(limit) {
 	}
 
 	// queue up dummy tasks
-	getArraySequenceList(6).forEach(function(number) {
+	for (let number of getSequenceList(6)) {
+		testFuncQueue.addTask(testTask,`Task ${number}`);
+	}
 
-		testFuncQueue.addTask(testTask,'Task ' + number);
-	});
-
-	testFuncQueue.complete(function(err,resultList) {
+	testFuncQueue.complete((err,resultList) => {
 
 		assert.deepEqual(
 			resultList,
@@ -461,4 +472,4 @@ function getArraySequenceList(limit) {
 			'Expected result list different to actual'
 		);
 	});
-})();
+}
