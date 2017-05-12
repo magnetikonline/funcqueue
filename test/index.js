@@ -187,18 +187,19 @@ function getSequenceList(limit) {
 	}
 
 	// queue up dummy tasks
-	for (let number of getSequenceList(TEST_RUN_PARALLEL_COUNT * 2)) {
+	for (let number of getSequenceList(TEST_RUN_PARALLEL_COUNT * 25)) {
 		testFuncQueue.addTask(testTask,`Task ${number}`);
 	}
 
 	testFuncQueue.complete((err,resultList) => {
 
+		let expectedList = [];
+		for (var number = 1,limit = (TEST_RUN_PARALLEL_COUNT * 25);number <= limit;number++) {
+			expectedList.push(`Task ${number}`);
+		}
+
 		assert.deepEqual(
-			resultList,
-			[
-				'Task 1','Task 2','Task 3','Task 4','Task 5','Task 6','Task 7','Task 8',
-				'Task 9','Task 10','Task 11','Task 12','Task 13','Task 14','Task 15','Task 16'
-			],
+			resultList,expectedList,
 			'Expected called task list different to actual'
 		);
 	});

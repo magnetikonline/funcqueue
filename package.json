@@ -1,6 +1,6 @@
 {
 	"name": "funcqueue",
-	"version": "2.0.0",
+	"version": "2.0.1",
 	"description": "A really low-fi function queue manager module for Node.js to ease the pain of building asynchronous code.",
 	"keywords": [
 		"async",

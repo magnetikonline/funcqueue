@@ -7,8 +7,11 @@ class FuncQueue {
 		this.parallelCount = parallelCount || 1;
 		this.taskQueue = [];
 		this.taskActiveCount = 0;
+
 		this.resultIndex = 0;
-		this.resultCollection = undefined;
+		this.resultList = [];
+		this.resultIndexList = [];
+
 		this.completeCallback = null;
 	}
 
@@ -49,15 +52,14 @@ function queueTask(funcQueue) {
 		// fetch task from queue and call on next tick
 		let {callback,argumentList} = funcQueue.taskQueue.shift();
 
-		// call task on next tick and increment active task count
+		// start task on next tick
+		funcQueue.taskActiveCount++;
 		process.nextTick(execTask.bind(
 			null,
 			funcQueue,
 			callback,argumentList,
 			funcQueue.resultIndex++
 		));
-
-		funcQueue.taskActiveCount++;
 	}
 }
 
@@ -106,13 +108,25 @@ function execTaskComplete(funcQueue,err,result,resultIndex) {
 		return finishQueue(funcQueue,err);
 	}
 
-	// save result from task into collection index slot (if returned)
 	if (result !== undefined) {
-		if (funcQueue.resultCollection === undefined) {
-			funcQueue.resultCollection = {};
-		}
+		// save task result
+		let {resultList,resultIndexList} = funcQueue,
+			indexLength = resultIndexList.length;
 
-		funcQueue.resultCollection[resultIndex] = result;
+		// if resultIndex greater than current list, push onto end (less work)
+		if (
+			(indexLength < 1) ||
+			(resultIndexList[indexLength - 1] < resultIndex)
+		) {
+			resultList.push(result);
+			resultIndexList.push(resultIndex);
+
+		} else {
+			// find index to insert result value at
+			let insertAt = resultIndexListInsertAt(resultIndex,resultIndexList,0,indexLength);
+			resultList.splice(insertAt,0,result);
+			resultIndexList.splice(insertAt,0,resultIndex);
+		}
 	}
 
 	// decrement active task count, queue further tasks
@@ -125,37 +139,46 @@ function execTaskComplete(funcQueue,err,result,resultIndex) {
 	}
 }
 
+function resultIndexListInsertAt(resultIndex,resultIndexList,low,high) {
+
+	if (low == high) {
+		// hit end of list - done
+		return low;
+	}
+
+	// get midpoint of list and result index value
+	let mid = low + Math.floor((high - low) / 2),
+		itemCompare = resultIndexList[mid];
+
+	if (resultIndex > itemCompare) {
+		// work higher end of list
+		return resultIndexListInsertAt(resultIndex,resultIndexList,mid + 1,high);
+	}
+
+	if (resultIndex < itemCompare) {
+		// work lower end of list
+		return resultIndexListInsertAt(resultIndex,resultIndexList,low,mid);
+	}
+
+	// found equal value - done
+	return mid;
+}
+
 function finishQueue(funcQueue,err) {
 
-	let hasCallback = (funcQueue.completeCallback !== null),
-		resultCollection = funcQueue.resultCollection,
-		resultList;
-
-	if (!err && hasCallback) {
-		// compile final result list from collection
-		resultList = [];
-
-		if (resultCollection !== undefined) {
-			// if not a single result returned from all tasks - no need to work resultCollection
-			let resultIndexCount = funcQueue.resultIndex;
-			for (let resultIndex = 0;resultIndex < resultIndexCount;resultIndex++) {
-				let resultValue = resultCollection[resultIndex];
-				if (resultValue !== undefined) {
-					resultList.push(resultValue);
-				}
-			}
-		}
+	if (funcQueue.completeCallback !== null) {
+		// call complete callback
+		funcQueue.completeCallback(
+			err,
+			(err) ? undefined : funcQueue.resultList
+		);
 	}
 
 	// setting (funcQueue.taskQueue === false) ensures no further tasks are allowed
 	funcQueue.taskQueue = false;
 	funcQueue.taskActiveCount = 0;
-	funcQueue.resultCollection = undefined;
-
-	if (hasCallback) {
-		// call complete callback
-		funcQueue.completeCallback(err,resultList);
-	}
+	funcQueue.resultList = undefined;
+	funcQueue.resultIndexList = undefined;
 }
 
 module.exports = FuncQueue;
