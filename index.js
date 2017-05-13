@@ -166,6 +166,11 @@ function resultIndexListInsertAt(resultIndex,resultIndexList,low,high) {
 
 function finishQueue(funcQueue,err) {
 
+	// setting (funcQueue.taskQueue === false) ensures no further tasks are allowed
+	funcQueue.taskQueue = false;
+	funcQueue.taskActiveCount = 0;
+	funcQueue.resultIndexList = null;
+
 	if (funcQueue.completeCallback !== null) {
 		// call complete callback
 		funcQueue.completeCallback(
@@ -174,11 +179,7 @@ function finishQueue(funcQueue,err) {
 		);
 	}
 
-	// setting (funcQueue.taskQueue === false) ensures no further tasks are allowed
-	funcQueue.taskQueue = false;
-	funcQueue.taskActiveCount = 0;
-	funcQueue.resultList = undefined;
-	funcQueue.resultIndexList = undefined;
+	funcQueue.resultList = null;
 }
 
 module.exports = FuncQueue;

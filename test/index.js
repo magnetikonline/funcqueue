@@ -96,6 +96,24 @@ function getSequenceList(limit) {
 			['Task 1','Task 2','Task 3','Task 4','Task 5','Task 6'],
 			'Expected result list different to actual'
 		);
+
+		// ensure we can't add further tasks to addTask() once complete
+		assert(
+			testFuncQueue.taskQueue === false,
+			'FuncQueue.taskQueue should be false'
+		);
+
+		testFuncQueue.addTask(() => {});
+
+		assert(
+			testFuncQueue.taskQueue === false,
+			'FuncQueue.taskQueue should be false'
+		);
+
+		assert(
+			testFuncQueue.taskActiveCount === 0,
+			'FuncQueue.taskActiveCount should be zero'
+		);
 	});
 }
 
