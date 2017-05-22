@@ -51,12 +51,12 @@ function queueTask(funcQueue) {
 
 		// start task on next tick
 		funcQueue.taskActiveCount++;
-		process.nextTick(execTask.bind(
-			null,
+		process.nextTick(
+			execTask,
 			funcQueue,
 			callback,argumentList,
 			funcQueue.resultIndex++
-		));
+		);
 	}
 }
 
@@ -77,18 +77,21 @@ function execTask(funcQueue,callback,argumentList,resultIndex) {
 
 				// finish up task upon next tick
 				callbackHandled = true;
-				process.nextTick(execTaskComplete.bind(
-					null,
+				process.nextTick(
+					execTaskComplete,
 					funcQueue,
 					err,result,
 					resultIndex
-				));
+				);
 			}
 		);
 
 	} catch (ex) {
 		// caught thrown exception from task
-		process.nextTick(execTaskComplete.bind(null,funcQueue,ex));
+		process.nextTick(
+			execTaskComplete,
+			funcQueue,ex
+		);
 	}
 }
 
