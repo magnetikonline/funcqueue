@@ -22,13 +22,10 @@ class FuncQueue {
 			return;
 		}
 
-		if (callback) {
-			// add task callback and arguments to new queue slot
-			this.taskQueue.push({callback,argumentList});
-		}
-
-		// if possible, queue next task
+		// add task callback and arguments to queue slot - if possible, queue next task
+		this.taskQueue.push({callback,argumentList});
 		queueTask(this);
+
 		return this;
 	}
 
