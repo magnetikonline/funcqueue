@@ -4,7 +4,18 @@ class FuncQueue {
 
 	constructor(parallelCount) {
 
-		this.parallelCount = parallelCount || 1;
+		// validate parallelCount
+		parallelCount = parallelCount || 1;
+		if (typeof parallelCount != 'number') {
+			throw new TypeError('Expected a numeric value for parallel count');
+		}
+
+		parallelCount = Math.floor(parallelCount);
+		if (parallelCount <= 0) {
+			throw new RangeError('Parallel count must be a value greater than zero');
+		}
+
+		this.parallelCount = parallelCount;
 		this.taskQueue = [];
 		this.taskActiveCount = 0;
 
@@ -16,6 +27,11 @@ class FuncQueue {
 	}
 
 	addTask(callback,...argumentList) {
+
+		// callback given a function?
+		if (!isFunction(callback)) {
+			throw new TypeError('Callback must be a function');
+		}
 
 		if (this.taskQueue === false) {
 			// queue finished - no further tasks allowed
@@ -31,12 +47,22 @@ class FuncQueue {
 
 	complete(callback) {
 
+		// callback given a function?
+		if (!isFunction(callback)) {
+			throw new TypeError('Callback must be a function');
+		}
+
 		if (this.completeCallback === null) {
 			this.completeCallback = callback;
 		}
 
 		return this;
 	}
+}
+
+function isFunction(value) {
+
+	return (typeof value == 'function');
 }
 
 function queueTask(funcQueue) {

@@ -36,11 +36,6 @@ function getSequenceList(limit) {
 	);
 
 	assert(
-		testFuncQueue.addTask() === testFuncQueue,
-		'Function addTask() should return itself'
-	);
-
-	assert(
 		testFuncQueue.complete(dummyFunction) === testFuncQueue,
 		'Function complete() should return itself'
 	);
@@ -56,12 +51,60 @@ function getSequenceList(limit) {
 
 
 {
+	let testFuncQueue;
+
+	testFuncQueue = new FuncQueue(2.6);
+
+	assert(
+		testFuncQueue.parallelCount == 2,
+		'Fractional parallel count values should be based to whole values'
+	);
+
+	assert.throws(
+		() => {
+
+			new FuncQueue(0.9);
+		},
+		RangeError,
+		'Setting a parallel count less than one should throw error'
+	);
+
+	assert.throws(
+		() => {
+
+			new FuncQueue('3.4');
+		},
+		TypeError,
+		'Passing non numeric parallel count to constructor should throw error'
+	);
+
+	assert.throws(
+		() => {
+
+			testFuncQueue.addTask('not function');
+		},
+		TypeError,
+		'Add task method show throw error when given non function callback'
+	);
+
+	assert.throws(
+		() => {
+
+			testFuncQueue.complete('not function');
+		},
+		TypeError,
+		'Complete method show throw error when given non function callback'
+	);
+}
+
+
+{
 	let testFuncQueue = new FuncQueue(),
 		activeTaskCount = 0;
 
 	assert(
 		testFuncQueue.parallelCount == 1,
-		'Parallel task count should equal 1'
+		'The default parallel task count should be 1'
 	);
 
 	// dummy task with artificial callback delay (to simulate 'work')

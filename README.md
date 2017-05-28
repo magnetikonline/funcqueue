@@ -51,7 +51,8 @@ All done!
 
 ### FuncQueue([parallelCount])
 - Creates new `FuncQueue` instance.
-- Optional `parallelCount` controls how many tasks will execute at any moment, if not defined will default to `1` - thus tasks run serially.
+- Optional `parallelCount` controls how many tasks execute at any moment, if undefined will default to `1` with tasks running serially.
+- Given `parallelCount` is expected to be a numeric value greater than or equal to `1` - exception thrown otherwise.
 
 ### FuncQueue.addTask(callback[,arguments...])
 - Adds a new task function `callback` to the `FuncQueue` queue.
@@ -63,6 +64,7 @@ All done!
 - Any errors _thrown_ by task functions will be caught by `FuncQueue` and trigger the error path (e.g. same behavior as passing an error to task callback).
 - Tasks are _not required_ to return a result - in this instance `undefined` is passed back and will be omitted from the finalised result list supplied to [FuncQueue.complete(callback)](#funcqueuecompletecallback).
 - In the case of an error returned, currently running parallel tasks will continue to completion with their results ignored - future queue tasks will *not* be executed.
+- Exception thrown if `callback` is not a function.
 
 Example:
 
@@ -107,6 +109,7 @@ myFuncQueue
 - Callback is passed two arguments - Node.js 'error first' style:
 	- Error value/object (if returned/thrown).
 	- Array of results from each `addTask()` item in queue, unless error where result list will be `undefined`.
+- Exception thrown if `callback` is not a function.
 
 ```js
 myFuncQueue
