@@ -1,8 +1,6 @@
 # FuncQueue
 A really low-fi function queue manager module for Node.js 6+ to ease the pain of building asynchronous code. Yep, there are hundreds of these already - here is another.
 
-[![NPM](https://nodei.co/npm/funcqueue.png?downloads=true)](https://nodei.co/npm/funcqueue/)
-
 - [Usage](#usage)
 - [Methods](#methods)
 	- [FuncQueue([parallelCount])](#funcqueueparallelcount)
@@ -13,27 +11,25 @@ A really low-fi function queue manager module for Node.js 6+ to ease the pain of
 
 ```js
 let FuncQueue = require('funcqueue'),
-	myFuncQueue = new FuncQueue();
+  myFuncQueue = new FuncQueue();
 
 function demoTask(param,callback) {
-
-	console.log(`Hello from task ${param}`);
-	callback(null,param);
+  console.log(`Hello from task ${param}`);
+  callback(null,param);
 }
 
 myFuncQueue.complete(
-	(err,resultList) => {
-
-		console.log('All done!');
-		console.log(resultList);
-	}
+  (err,resultList) => {
+    console.log('All done!');
+    console.log(resultList);
+  }
 );
 
 myFuncQueue
-	.addTask(demoTask,'one')
-	.addTask(demoTask,'two')
-	.addTask(demoTask,'three')
-	.addTask(demoTask,'four');
+  .addTask(demoTask,'one')
+  .addTask(demoTask,'two')
+  .addTask(demoTask,'three')
+  .addTask(demoTask,'four');
 ```
 
 Produces the following output:
@@ -49,12 +45,14 @@ All done!
 
 ## Methods
 
-### FuncQueue([parallelCount])
+### `FuncQueue([parallelCount])`
+
 - Creates new `FuncQueue` instance.
 - Optional `parallelCount` controls how many tasks execute at any moment, if undefined will default to `1` with tasks running serially.
 - Given `parallelCount` is expected to be a numeric value greater than or equal to `1` - exception thrown otherwise.
 
-### FuncQueue.addTask(callback[,arguments...])
+### `FuncQueue.addTask(callback[,arguments...])`
+
 - Adds a new task function `callback` to the `FuncQueue` queue.
 - Optional `arguments` can be passed to the task `callback`.
 - Upon execution `callback` will receive (in the following order):
@@ -70,41 +68,39 @@ Example:
 
 ```js
 myFuncQueue
-	.addTask(
-		(param1,param2,callback) => {
+  .addTask(
+    (param1,param2,callback) => {
+      console.log(`Task called with: ${param1} and: ${param2}`);
+      // Task called with: First parameter and: Second parameter
 
-			console.log(`Task called with: ${param1} and: ${param2}`);
-			// Task called with: First parameter and: Second parameter
-
-			setTimeout(
-				() => { callback(null,'My computed result'); },
-				2000
-			);
-		},
-		'First parameter',
-		'Second parameter'
-	);
+      setTimeout(
+        () => { callback(null,'My computed result'); },
+        2000
+      );
+    },
+    'First parameter',
+    'Second parameter'
+  );
 ```
 
 In addition, task callback receive their parent `FuncQueue` instance as `this`, allowing for the chaining of further conditional tasks from within tasks themselves:
 
 ```js
 myFuncQueue
-	.addTask(function(callback) {
+  .addTask(function(callback) {
+    someReallyComplexAsyncCalculation((err,result) => {
+      if (result > 15) {
+        // add an additional FuncQueue task
+        this.addTask(resultAbove15Task);
+      }
 
-		someReallyComplexAsyncCalculation((err,result) => {
-
-			if (result > 15) {
-				// add an additional FuncQueue task
-				this.addTask(resultAbove15Task);
-			}
-
-			callback(null,'Done');
-		});
-	});
+      callback(null,'Done');
+    });
+  });
 ```
 
-### FuncQueue.complete(callback)
+### `FuncQueue.complete(callback)`
+
 - Assigns a callback that will be executed at competition of all defined tasks.
 - Callback is passed two arguments - Node.js 'error first' style:
 	- Error value/object (if returned/thrown).
@@ -113,14 +109,13 @@ myFuncQueue
 
 ```js
 myFuncQueue
-	.complete((err,resultList) => {
+  .complete((err,resultList) => {
+    if (err) {
+      // uh, oh an error
+      console.log(resultList); // undefined
+      return;
+    }
 
-		if (err) {
-			// uh, oh an error
-			console.log(resultList); // undefined
-			return;
-		}
-
-		console.log(resultList);
-	});
+    console.log(resultList);
+  });
 ```
