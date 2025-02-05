@@ -11,7 +11,7 @@ let assert = require('assert'),
 function getSequenceList(limit) {
 
 	let sequenceList = [];
-	for (let seq = 1;seq <= limit;seq++) {
+	for (let seq = 1; seq <= limit; seq++) {
 		sequenceList.push(seq);
 	}
 
@@ -255,7 +255,7 @@ function getSequenceList(limit) {
 	testFuncQueue.complete((err,resultList) => {
 
 		let expectedList = [];
-		for (var number = 1,limit = (TEST_RUN_PARALLEL_COUNT * 25);number <= limit;number++) {
+		for (var number = 1,limit = (TEST_RUN_PARALLEL_COUNT * 25); number <= limit; number++) {
 			expectedList.push(`Task ${number}`);
 		}
 

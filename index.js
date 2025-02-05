@@ -39,7 +39,7 @@ class FuncQueue {
 		}
 
 		// add task callback and arguments to queue slot - if possible, queue next task
-		this.taskQueue.push({callback,argumentList});
+		this.taskQueue.push({ callback,argumentList });
 		queueTask(this);
 
 		return this;
@@ -73,7 +73,7 @@ function queueTask(funcQueue) {
 		(funcQueue.taskActiveCount < funcQueue.parallelCount)
 	) {
 		// fetch task from queue and call on next tick
-		let {callback,argumentList} = funcQueue.taskQueue.shift();
+		let { callback,argumentList } = funcQueue.taskQueue.shift();
 
 		// start task on next tick
 		funcQueue.taskActiveCount++;
@@ -136,7 +136,7 @@ function execTaskComplete(funcQueue,err,result,resultIndex) {
 
 	if (result !== undefined) {
 		// save task result
-		let {resultList,resultIndexList} = funcQueue,
+		let { resultList,resultIndexList } = funcQueue,
 			indexLength = resultIndexList.length;
 
 		// if resultIndex greater than current list, push onto end (less work)

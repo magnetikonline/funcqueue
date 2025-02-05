@@ -1,0 +1,11 @@
+{
+	"javascript.format.enable": true,
+	"javascript.format.insertSpaceAfterCommaDelimiter": false,
+	"javascript.format.insertSpaceAfterFunctionKeywordForAnonymousFunctions": false,
+	"javascript.format.insertSpaceAfterOpeningAndBeforeClosingEmptyBraces": false,
+	"javascript.format.semicolons": "insert",
+	"javascript.preferences.quoteStyle": "single",
+	"[javascript]": {
+		"editor.formatOnSave": true,
+	},
+}
