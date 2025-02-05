@@ -112,11 +112,11 @@ function execTask(funcQueue,callback,argumentList,resultIndex) {
 			}
 		);
 
-	} catch (ex) {
-		// caught thrown exception from task
+	} catch (err) {
+		// caught thrown error from task
 		process.nextTick(
 			execTaskComplete,
-			funcQueue,ex
+			funcQueue,err
 		);
 	}
 }
