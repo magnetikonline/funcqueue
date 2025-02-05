@@ -1,6 +1,6 @@
 'use strict';
 
-let assert = require('assert'),
+let assert = require('node:assert/strict'),
 	util = require('util'),
 
 	FuncQueue = require('../index.js'),
